@@ -130,6 +130,52 @@ def test_correct_key_names_in_result(test_params, test_client, rates_url):
 
 
 @pytest.mark.test_data
+def test_dates_outside_of_range(test_params, test_client, rates_url):
+    test_params["date_from"] = "2018-01-01"
+    test_params["date_to"] = "2018-01-10"
+    response = test_client.get(rates_url, query_string=test_params)
+    data = response.json
+
+    assert response.status_code == 200
+    assert isinstance(data, list)
+    assert len(data) == 10
+    for row in data:
+        assert row["average_price"] is None
+
+
+@pytest.mark.test_data
+def test_north_europe_main_to_self_all_empty(test_params, test_client, rates_url):
+    """In the test data, there are no price rows that go from north_europe_main
+    to itself."""
+    test_params["origin"] = "north_europe_main"
+    response = test_client.get(rates_url, query_string=test_params)
+    data = response.json
+
+    assert response.status_code == 200
+    assert isinstance(data, list)
+    assert len(data) == 10
+    for row in data:
+        assert row["average_price"] is None
+
+
+@pytest.mark.test_data
+@pytest.mark.parametrize("port_code", ["CNSGH", "CNXAM", "CNHDG"])
+def test_origin_destination_same_port_no_prices(
+    port_code, test_params, test_client, rates_url
+):
+    test_params["destination"] = port_code
+    test_params["origin"] = port_code
+    response = test_client.get(rates_url, query_string=test_params)
+    data = response.json
+
+    assert response.status_code == 200
+    assert isinstance(data, list)
+    assert len(data) == 10
+    for row in data:
+        assert row["average_price"] is None
+
+
+@pytest.mark.test_data
 def test_jan_01_price_is_1112(test_params, test_client, rates_url):
     """In the test data, Jan. 4, 2016 has only one price for the test route,
     so it should return NULL for average_price."""

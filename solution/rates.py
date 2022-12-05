@@ -168,23 +168,27 @@ class RatesEndpoint:
         sql = f"""
         SELECT
             TO_CHAR(d.day, 'YYYY-mm-dd') AS day,
+            --p.day AS pday,
+            --p.orig_code,
+            --p.dest_code,
+            --p.price
             CASE
-                WHEN COUNT(p.day) < 3 THEN NULL
-                ELSE CAST(AVG(price) AS int)
+                WHEN COUNT(pric.day) < 3 THEN NULL
+                ELSE CAST(AVG(pric.price) AS int)
             END AS average_price
         FROM alldates d
-            LEFT OUTER JOIN prices p ON p.day = d.day
-            LEFT OUTER JOIN ports orig_port ON p.orig_code=orig_port.code
-            LEFT OUTER JOIN ports dest_port ON p.dest_code=dest_port.code
+            LEFT OUTER JOIN (
+                SELECT *
+                FROM prices p
+                    LEFT OUTER JOIN ports orig_port ON p.orig_code=orig_port.code
+                    LEFT OUTER JOIN ports dest_port ON p.dest_code=dest_port.code
+                WHERE (
+                    {origin_clause} AND {destination_clause}
+                )
+            ) pric ON pric.day = d.day
         WHERE
             d.day >= %(date_from)s AND
-            d.day <= %(date_to)s AND
-            (
-                p.day IS NULL OR (
-                    {origin_clause} AND
-                    {destination_clause}
-                )
-            )
+            d.day <= %(date_to)s
         GROUP BY d.day
         ORDER BY d.day
         """
