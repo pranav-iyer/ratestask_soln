@@ -168,10 +168,6 @@ class RatesEndpoint:
         sql = f"""
         SELECT
             TO_CHAR(d.day, 'YYYY-mm-dd') AS day,
-            --p.day AS pday,
-            --p.orig_code,
-            --p.dest_code,
-            --p.price
             CASE
                 WHEN COUNT(pric.day) < 3 THEN NULL
                 ELSE CAST(AVG(pric.price) AS int)
